@@ -11,7 +11,6 @@ main = do
 	inWave <- getWAVEFile inFile
 	putWAVEFile outFile (übercompensate inWave)
 
-übercompensate :: WAVE -> WAVE
 übercompensate inWave = 
 	let
 		inHeader = waveHeader inWave
@@ -26,18 +25,6 @@ main = do
 				(-1) * signum current * (2 - abs current)
 			else 
 				current
-
-		findAbsMax currentFrame (lastFrame, maxSample) = 
-			let 
-				compensated = map flipper (zip lastFrame currentFrame)
-				currentMax :: Double
-				currentMax = maximum $ map abs compensated
-			in
-				(compensated, max maxSample currentMax)
-
-		maxSample :: Double
-		maxSample = snd $ foldr findAbsMax (head inFrames, 0) inFrames
-
 		
 		compensateFrame last [] = []
 		compensateFrame last (current:rest) =
@@ -48,7 +35,8 @@ main = do
 
 		compensatedFrames = compensateFrame (head inFrames) inFrames
 
+		maxSample = maximum $ map maximum compensatedFrames
 		normalization = (/maxSample)
 	in
-		WAVE { waveHeader = inHeader, waveSamples = map (map (doubleToSample . normalization)) inFrames }
+		WAVE { waveHeader = inHeader, waveSamples = map (map (doubleToSample . normalization)) compensatedFrames }
 
