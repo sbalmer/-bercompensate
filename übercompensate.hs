@@ -19,7 +19,7 @@ main = do
 		
 		flipper :: (Double, Double) -> Double
 		flipper (last, current) =
-			if abs (current - last) >= 1
+			if abs (current - last) >= 1.5
 			then (-1) * signum current * (2 - abs current)
 			else current
 		
