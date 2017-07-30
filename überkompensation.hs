@@ -27,8 +27,7 @@ main = do
 			else 
 				current
 
-		findAbsMax :: (Frame, Double) -> Frame -> (Frame, Double)
-		findAbsMax (lastFrame, maxSample) currentFrame = 
+		findAbsMax currentFrame (lastFrame, maxSample) = 
 			let 
 				compensated = map flipper (zip lastFrame currentFrame)
 				currentMax :: Double
@@ -37,18 +36,19 @@ main = do
 				(compensated, max maxSample currentMax)
 
 		maxSample :: Double
-		maxSample = snd $ foldl findAbsMax (head inFrames, 0) inFrames
+		maxSample = snd $ foldr findAbsMax (head inFrames, 0) inFrames
 
-		compensateFrame :: Frame -> (Frame, [Frame]) -> (Frame, [Frame])
-		compensateFrame currentFrame (lastFrame, normalizedFrames) =
+		
+		compensateFrame last [] = []
+		compensateFrame last (current:rest) =
 			let
-				compensated = map flipper (zip lastFrame currentFrame)
+				compensated = map flipper (zip last current)
 			in
-				(compensated, compensated : normalizedFrames)
+				compensated : compensateFrame compensated rest
 
-		compensatedFrames = snd $ foldr compensateFrame (head inFrames, []) inFrames
+		compensatedFrames = compensateFrame (head inFrames) inFrames
 
 		normalization = (/maxSample)
 	in
-		WAVE { waveHeader = inHeader, waveSamples = map (map (doubleToSample . normalization)) compensatedFrames }
+		WAVE { waveHeader = inHeader, waveSamples = map (map (doubleToSample . normalization)) inFrames }
 
