@@ -30,7 +30,8 @@ main = do
 
 		compensatedFrames = compensateFrame (head inFrames) inFrames
 
-		maxSample = maximum $ map maximum compensatedFrames
+		-- maxSample = maximum $ map maximum compensatedFrames
+		maxSample = 1.1
 		normalization = (/maxSample)
 
 		outFrames = map (map (doubleToSample . normalization)) compensatedFrames
