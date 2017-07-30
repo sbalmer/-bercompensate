@@ -19,24 +19,21 @@ main = do
 		
 		flipper :: (Double, Double) -> Double
 		flipper (last, current) =
-			if
-				 abs (current - last) >= 1
-			then
-				(-1) * signum current * (2 - abs current)
-			else 
-				current
+			if abs (current - last) >= 1
+			then (-1) * signum current * (2 - abs current)
+			else current
 		
 		compensateFrame last [] = []
 		compensateFrame last (current:rest) =
-			let
-				compensated = map flipper (zip last current)
-			in
-				compensated : compensateFrame compensated rest
+			let compensated = map flipper (zip last current)
+			in compensated : compensateFrame compensated rest
 
 		compensatedFrames = compensateFrame (head inFrames) inFrames
 
 		maxSample = maximum $ map maximum compensatedFrames
 		normalization = (/maxSample)
+
+		outFrames = map (map (doubleToSample . normalization)) compensatedFrames
 	in
-		WAVE { waveHeader = inHeader, waveSamples = map (map (doubleToSample . normalization)) compensatedFrames }
+		WAVE { waveHeader = inHeader, waveSamples = outFrames }
 
