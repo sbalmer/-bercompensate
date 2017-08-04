@@ -54,7 +54,7 @@ main = do
 			in
 				case bestTermination of
 					-- correct overflow: if we find a run of inversions that is better than the base, take that
-					(en, bestTermCandidate):_ | en < baseEnergy -> (reverse $ tail bestTermCandidate, [sample], [])
+					(en, bestTermCandidate):_ | en < (baseEnergy - 0.5) -> (reverse $ tail bestTermCandidate, [sample], [])
 					_ -> case goodCandidates of
 						-- base case: there are no inversion candidates; output base and the current sample becomes the new base
 						[] -> (reverse base, [sample], [])
