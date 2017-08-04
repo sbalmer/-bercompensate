@@ -18,6 +18,7 @@ energyRec :: Double -> Sample -> Window -> Double
 energyRec en last [] = en
 energyRec en last (x:xs) = energyRec (en + abs (last - x)) x xs 
 
+-- Calculate cumulative difference of a window
 energy :: Window -> Double
 energy [] = 0
 energy (x:xs) = energyRec 0 x xs
@@ -45,20 +46,24 @@ main = do
 				bestTermination = sort $ zip (map energy terminationCandidates) terminationCandidates
 				invertedSample = signum sample * (abs sample - 2)
 				-- Assume that overflows don't last long and discard long candidates
-				sufficientlyShortCandidates :: [Window]
-				sufficientlyShortCandidates = filter ((<10).length) candidates
+				shortCandidates :: [Window]
+				shortCandidates = filter ((<10).length) candidates
 				nextCandidates :: [Window]
-				nextCandidates = (invertedSample : base) : map (invertedSample : ) sufficientlyShortCandidates 
-				-- Discard candidates that are much worse than the base case. This should keep the candidates list empty most of the time.
+				nextCandidates = (invertedSample : base) : map (invertedSample : ) shortCandidates 
+				-- Discard candidates that are much worse than the base case.
+				-- This should keep the candidates list empty most of the time.
 				goodCandidates = filter ((< baseEnergy) . (+ 0.1) . energy) nextCandidates
 			in
 				case bestTermination of
-					-- correct overflow: if we find a run of inversions that is better than the base, take that
+					-- Correct overflow: if we find a run of inversions 
+					-- that is better than the base, take it
 					(en, bestTermCandidate):_ | en < (baseEnergy - 0.5) -> (reverse $ tail bestTermCandidate, [sample], [])
 					_ -> case goodCandidates of
-						-- base case: there are no inversion candidates; output base and the current sample becomes the new base
+						-- base case: there are no inversion candidates;
+						-- output base and the current sample becomes the new base
 						[] -> (reverse base, [sample], [])
-						-- continue with candidates: inconclusive because no candidate terminated better than base
+						-- continue with candidates: inconclusive because 
+						-- no candidate terminated better than base
 						newCandidates -> ([], nextBase, newCandidates)
 					
 		processStream :: Window -> [Window] -> Stream -> Stream
