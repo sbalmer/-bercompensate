@@ -71,7 +71,7 @@ main = do
 		reflowedStreams = map (\(first:rest) -> processStream [first] [] rest) inStreams
 		reflowedFrames = transpose reflowedStreams
 	
-		maxSample = foldr1 max $ foldr1 max reflowedFrames 
+		maxSample = foldr1 max $ foldr1 (max.(map abs)) reflowedFrames 
 		-- maxSample = 1.1
 		normalization = (/maxSample)
 
