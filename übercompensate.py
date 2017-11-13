@@ -40,12 +40,12 @@ def MinimumEnergyInverter(maxsamples):
 		if sample is None:
 			return base
 
-		nextBase = [sample] + base
+		nextBase = base + [sample]
 		baseEnergy = energy(nextBase)
 
 		# Calculate the energy if we terminate inversion
 		def terminationEnergy(window):
-			return (energy([sample] + window), window)
+			return (energy(window + [sample]), window)
 
 		terminationRanking = sorted(map(terminationEnergy, candidates))
 		bestTermination = next(iter(terminationRanking), None)
@@ -54,19 +54,18 @@ def MinimumEnergyInverter(maxsamples):
 			# that is better than the base
 			base = [sample] # Sample becomes start of the new base
 			candidates = []
-			return reversed(bestTermination[1])
+			return bestTermination[1]
 
 		invertedSample = math.copysign(1, sample) * (abs(sample) - 2)
 
-		nextCandidates = [[invertedSample] + base]
-		for candidate in candidates:
+		nextCandidates = []
+		for candidate in candidates + [base]:
 			if (len(candidate) < maxsamples):
-				nextCandidates.append([invertedSample] + candidate)
+				nextCandidates.append(candidate + [invertedSample])
 
 		# Discard candidates that are not much better than base. Here
 		# we discard trivial candidates.
 		goodCandidates = list(filter(lambda c: energy(c) + 0.1 < baseEnergy, nextCandidates))
-
 		if len(goodCandidates) > 0:
 			# Inconclusive result: We have good candidates.
 			# So we don't return any samples yet
@@ -75,7 +74,7 @@ def MinimumEnergyInverter(maxsamples):
 			return []
 		else:
 			candidates = []
-			samples = reversed(base)
+			samples = base
 			base = [sample]
 			return samples
 
