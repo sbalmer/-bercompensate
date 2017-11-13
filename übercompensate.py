@@ -92,18 +92,30 @@ def applyFilter(stream, proc):
 				proc(filters[ch](sample), ch)
 
 	for windows in stream.read_iter(size=512):
-		sys.stderr.write("."); sys.stderr.flush()
 		addWindows(windows)
 
 	# Tell filters to clear their buffers
 	addWindows([[None]] * stream.channels)
+
+def minuteMarker(stream):
+	c = 0
+	spm = stream.samplerate * 60
+	dur = stream.frames / spm
+
+	def mark(add):
+		nonlocal c
+		c += add
+		if c % 1000 < (c - add) % 1000:
+			sys.stderr.write("{:.3f}min of {:.3f}min \r".format(c / spm, dur))
+
+	return mark
 
 
 with WaveReader(arguments['<in>']) as inWav:
 	filters = [MinimumEnergyInverter(maxsamples) for _ in range(inWav.channels)]
 	framenr = [0] * inWav.channels
 	absmax = 0
-
+	mark = minuteMarker(inWav)
 	def findGain(filtered, ch):
 		global framenr
 		global absmax
@@ -111,12 +123,15 @@ with WaveReader(arguments['<in>']) as inWav:
 			abssample = abs(sample)
 			absmax = max(abssample, absmax)
 			if abssample > 1.0:
-				sys.stderr.write("\nchannel {} frame {}: overflow {}\n".format(ch, framenr[ch], abssample))
+				sys.stderr.write("channel {} frame {}: overflow {:.5f}\n".format(ch, framenr[ch], abssample))
 			framenr[ch] += 1
+
+		if ch == 0:
+			mark(len(filtered))
 
 	applyFilter(inWav, findGain)
 
-	sys.stderr.write("\nMax sample {}.\n".format(absmax))
+	sys.stderr.write("\nMax sample {:.5f}.\n".format(absmax))
 
 out = arguments.get('<out>', None)
 if out:
@@ -137,6 +152,8 @@ if out:
 			# buffer them.
 			bufs = [[] for _ in range(inWav.channels)]
 
+			mark = minuteMarker(inWav)
+
 			def flush():
 				complete = min(map(len, bufs))
 				if complete:
@@ -151,6 +168,9 @@ if out:
 				bufs[ch].extend(map(lambda s: s*gain, corrected))
 				if len(bufs[ch]) > 512:
 					flush()
+
+				if ch == 0:
+					mark(len(corrected))
 
 			applyFilter(inWav, writeCorrected)
 			flush()
